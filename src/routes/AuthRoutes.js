@@ -3,7 +3,7 @@ const { check } = require('express-validator');
 
 const router = express.Router();
 
-const { signup, login, getAuthenticatedCustomerData} = require('../controllers/AuthControllers');
+const { signup, login, getAuthenticatedCustomerData, toggleCustomerAdminStatus} = require('../controllers/AuthControllers');
 const checkAuthCustomer = require('../middlewares/checkAuthCustomer') ;
 
 /*****
@@ -14,6 +14,7 @@ const checkAuthCustomer = require('../middlewares/checkAuthCustomer') ;
 router.post('/signup', [
   check('firstname', 'Firstname field is required').notEmpty(),
   check('lastname', 'Lastname field is required').notEmpty(),
+  check('phone', 'Phone field is required').notEmpty(),
   check('email', 'Email field is required').isEmail(),
   check('password', 'password field is required').notEmpty(),
 ]
@@ -32,10 +33,17 @@ router.post('/login', [
 
 /*****
  * @route GET /api/auth/
- * @desc Customer signup
+ * @desc Customer details by token
  *@access public
  */
 router.get('/', checkAuthCustomer, getAuthenticatedCustomerData );
+
+/*****
+ * @route PUT /api/auth/
+ * @desc Toggle admin role of any customer
+ *@access secret
+ */
+router.put('/', toggleCustomerAdminStatus);
 
 
 module.exports = router;

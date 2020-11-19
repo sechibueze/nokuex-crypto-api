@@ -15,7 +15,7 @@ const signup = (req, res) => {
   }
 
   // Passed all validations
-  const { firstname, lastname, email, password, role } = req.body;
+  const { firstname, lastname, email, phone, password, role } = req.body;
   Customer.findOne({ email }, (err , customer) => {
 
     if ( err ) return res.status(500).json({ status: false, error: 'Server error:: Could not retrieve record'});
@@ -26,7 +26,7 @@ const signup = (req, res) => {
     const defaultProfileImageUrl = gravatar.url(email, {s: '150', d: 'mm', r: 'pg'}, true);
     let defaultRoles = ['customer'];
     if (role === 'agent') defaultRoles = ['customer', 'agent'];
-    const newCustomer = new Customer({ roles: defaultRoles , firstname, lastname, email, password, profileImage: defaultProfileImageUrl});
+    const newCustomer = new Customer({ roles: defaultRoles , firstname, lastname, phone, email, password, profileImage: defaultProfileImageUrl});
     // Hash password
     bcrypt.genSalt(10, (err, salt) => {
       if (err) return res.status(500).json({ status: false, error: 'Server error:: Failed to generate salt' });
@@ -126,7 +126,7 @@ const getAuthenticatedCustomerData = (req, res) => {
 
 
 // Update Customers role 
-const updateUserAuth = (req, res) => {
+const toggleCustomerAdminStatus = (req, res) => {
   
    const errorsContainer = validationResult(req);
     if (!errorsContainer.isEmpty()) {
@@ -138,45 +138,43 @@ const updateUserAuth = (req, res) => {
     
     const { email } = req.body;
 
-  User.findOne({ email })
+  Customer.findOne({ email })
     .select('-password')
-    .then(user => {
+    .then(customer => {
 
-      if (!user) {
-        return res.status(500).json({
+      if (!customer) {
+        return res.status(401).json({
           status: false,
-          error: 'No user account found'
+          error: 'No customer account was found'
         })
       }
 
-      // User has an account
-      
-
-      if (!user.roles.includes('admin')) {
-        user.roles = [...user.roles, 'admin'];
+      // Customer has an account
+      if (!customer.roles.includes('admin')) {
+        customer.roles = [...customer.roles, 'admin'];
       }else{
-        user.roles = user.roles.filter(role => role !== 'admin');
-       
+        customer.roles = customer.roles.filter(role => role !== 'admin');  
       }
-      user.save(err => {
+
+      customer.save(err => {
         if (err) {
           return res.status(500).json({
-          status: false,
-          error: 'Failed to update user role'
-        })
+            status: false,
+            error: 'Failed to update customer role'
+          })
         }
 
         return res.status(200).json({
           status: true,
-          message: 'User role has been updated accordingly',
-          data: user
+          message: 'Customer role has been updated accordingly',
+          data: customer.roles
         });
       })
     })
     .catch(err => {
       return res.status(500).json({
         status: false,
-        error: 'Failed to find user'
+        error: 'Failed to find customer'
       })
     })
 };
@@ -186,5 +184,5 @@ module.exports = {
   signup,
   login,
   getAuthenticatedCustomerData,
-  // updateUserAuth,
+  toggleCustomerAdminStatus,
 };

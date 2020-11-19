@@ -3,11 +3,8 @@ const { validationResult } = require('express-validator');
 const Customer = require('../models/Customer');
 
 
-
-
-
 // loadAllUCustomers
-const loadAllUCustomers = (req, res) => {
+const loadAllCustomers = (req, res) => {
 
   Customer.find()
     .select('-password')
@@ -68,6 +65,6 @@ const deleteCustomersByFilter = (req, res) => {
 };
 
 module.exports = {
-  loadAllUCustomers,
+  loadAllCustomers,
   deleteCustomersByFilter,
 };
