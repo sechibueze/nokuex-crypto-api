@@ -15,7 +15,7 @@ function checkAuthCustomer(req, res, next) {
        roles: decoded.auth
       }
       req.authCustomer = authCustomer;
-      next();
+      return next();
   });
 }
 
