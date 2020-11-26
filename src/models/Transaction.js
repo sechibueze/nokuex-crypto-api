@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Agent = require('./Agent');
 
 const Schema = mongoose.Schema;
 
@@ -8,17 +9,25 @@ const TransactionSchema = new Schema({
     ref: Customer,
     required: true
   },
-  bitcoin_balance: {
+  amount: {
     type: Number,
     required: true,
     default: 0
   },
-  etherium_balance: {
-    type: Number,
-    required: true,
-    default: 0
+  agent_username: {
+    type: String,
+    ref: Agent,
+  },
+  wallet_address: {
+    type: String,
+    required: true
+  },
+  status: {
+    type: String,
+    default: "pending",
+    enum: ["pending", "processing", "completed"]
   },
   
 }, { timestamps: true});
 
-module.exports = Wallet = mongoose.model('wallet', TransactionSchema);
+module.exports = Transaction = mongoose.model('transaction', TransactionSchema);

@@ -12,7 +12,7 @@ const checkAuthAdmin = require('../middlewares/checkAuthAdmin') ;
  *@access private
  */
 router.post('/',[
-  check('product', 'Firstname field is required').notEmpty(),
+  check('product', 'product field is required').notEmpty(),
   check('trade_type', 'trade_type field is required').notEmpty(),
   check('agent_name', 'agent_name field is required').notEmpty(),
   check('rate_per_usd', 'rate_per_usd field is required').notEmpty(),
