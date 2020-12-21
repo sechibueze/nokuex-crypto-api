@@ -3,7 +3,7 @@ const { check } = require('express-validator');
 
 const router = express.Router();
 
-const { initializeTransaction, loadAllTransactions, deleteTransactionsByFilter, updateTransactionById} = require('../controllers/TransactionControllers');
+const { initializeTransaction, completeTransaction, loadAllTransactions, deleteTransactionsByFilter, updateTransactionById} = require('../controllers/TransactionControllers');
 const checkAuthCustomer = require('../middlewares/checkAuthCustomer') ;
 const checkAuthAdmin = require('../middlewares/checkAuthAdmin') ;
 
@@ -34,6 +34,17 @@ router.get('/', checkAuthAdmin, loadAllTransactions);
 router.put('/:transactionId',[
   check('status', 'Status field is required').notEmpty(),
 ], checkAuthCustomer, updateTransactionById);
+
+
+/*****
+ * @route PUT /api/transactions/:transactionId/complete
+ * @desc Transfer to user
+ *@access private
+ */
+router.put('/:transactionId/complete',
+// [check('status', 'Status field is required').notEmpty()],
+ checkAuthAdmin, 
+ completeTransaction);
 
 
 /*****

@@ -1,8 +1,15 @@
+
+// const bitcoin = require("bitcoinjs-lib");
+// const bigi    = require("bigi");
+// const buffer  = require('buffer');
+// const axios = require("axios").default;
 const { validationResult } = require('express-validator');
+// const BlockIo = require('../config/blockio.config')
 const Agent = require('../models/Agent');
 const Customer = require('../models/Customer');
-
+const TransferCrypto = require('../_helpers/transferCrypto')
 const Transaction = require('../models/Transaction');
+// const { key } = require("../config/blockio.config");
 
 /*** Allow customers to initialize Transaction */
 const initializeTransaction = (req, res) => {
@@ -53,6 +60,67 @@ const initializeTransaction = (req, res) => {
 
       })
   
+};
+
+/*** Allow agents to  transfer btc to customers */
+const completeTransaction = (req, res) => {
+  const errorsContainer = validationResult(req);
+  if (!errorsContainer.isEmpty()) {
+    return res.status(422).json({
+      status: false,
+      errors: errorsContainer.errors.map(err => err.msg)
+    });
+  }
+
+  Transaction.findOne({ _id: req.params.transactionId })
+  
+  .then(transaction => {
+    console.log('trnx', transaction )
+    if (!transaction || transaction.status !== 'processing') {
+      return res.status(400).json({
+        status: false,
+        error: 'Transaction is not due for processing'
+      })
+    }
+    const source = {
+      initialBalance: 0.01786381,
+      private: "2bdc8af827e929de8b1b9eeb7ff15775b91a39e03c52fa3c483c7981dfcf4a4d",
+      public: "03d5f95022aaeeaea28a6c7ba1bf317ae08e0e7527773f41b79ccf92edef6a87f7",
+      address: "muESfmo9CSCpj66VvvxPwMZnq5sesV7WEG",
+      wif: "cP3xndR1TRwQUPY26W5xZxGLM75cdh9dCBjeb91aMBhkwbTYC1G1"
+    }
+    const dest = {
+      private: "82c0d694c7d4e80f8fd2932a83a22f0c0631207237a4adbb57ffca338fad58f0",
+      public: "02037eece0b7c0d7500f0e012f445d7e15037cfd3e75b90fbeae3c7e6d9d4f015d",
+      address: "mviPJ2vcmDNGCAGvX6fxonyKMfNFSiaNEE",
+      wif: "cRxsMJGfnHHoYjFPA69phMqXTKXSoeY2qPp4g2AWwX3ptSzwkMTE"
+    };
+
+    const walletAddress = transaction.wallet_address;
+    const amount = 100000;
+    TransferCrypto(amount, dest.address, source.address, source.wif)
+      .then(finaltx => {
+         console.log('final ', finaltx)
+         return res.json({
+           data: finaltx
+         })
+      })
+      .catch(error => {
+        console.log('error ', error)
+        return res.json({
+          error: error
+        })
+      })
+    
+    
+
+    })
+    .catch(err => {
+      return res.status(500).json({
+        status: false,
+        error: 'Failed to retrieve transactions'
+      })
+    })
 };
 
 
@@ -187,6 +255,7 @@ const deleteTransactionsByFilter = (req, res) => {
 
 module.exports = {
   initializeTransaction,
+  completeTransaction,
   loadAllTransactions,
   updateTransactionById,
   deleteTransactionsByFilter,

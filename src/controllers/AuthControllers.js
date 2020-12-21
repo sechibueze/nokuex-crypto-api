@@ -6,6 +6,7 @@ const Customer = require('../models/Customer');
 
 /*** Handle Customer sign up request */
 const signup = (req, res) => {
+  console.log('calling signup')
   const errorsContainer = validationResult(req);
   if (!errorsContainer.isEmpty()) {
     return res.status(422).json({
@@ -36,7 +37,8 @@ const signup = (req, res) => {
 
         newCustomer.password = hash;
         newCustomer.save(err => {
-          if (err) return res.status(500).json({ status: false, error: 'Server error:: Failed to save Customer' });
+          console.log('err ', err)
+          if (err) return res.status(500).json({ status: false, error: 'Server error:: Failed to save Customerxx', errt: err });
 
           const payload = { id : newCustomer._id, auth: newCustomer.roles };
           jwt.sign(

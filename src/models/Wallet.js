@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const WalletSchema = new Schema({
-  customer:{
+  owner:{
     type: Schema.Types.ObjectId,
     ref: Customer,
     required: true
