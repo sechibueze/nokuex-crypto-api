@@ -17,6 +17,7 @@ const CustomerSchema = new Schema({
     type: String,
     required: true,
     unique: true,
+    index: true,
     trim: true
   },
   phone: {
@@ -28,6 +29,30 @@ const CustomerSchema = new Schema({
     type: String,
     required: true,
     trim: true
+  },
+  bitcoin_balance: {
+    type: Number,
+    default: 0,
+  },
+  ethereum_balance: {
+    type: Number,
+    default: 0,
+  },
+  binance_balance: {
+    type: Number,
+    default: 0,
+  },
+  bitcoin_address: {
+    type: String,
+    default: ''
+  },
+  ethereum_address: {
+    type: String,
+    default: ''
+  },
+  binance_address: {
+    type: String,
+    default: ''
   },
   profileImage: {
     type: String,

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Agent = require('./Agent');
+const { SUPPORTED_NETWORKS, SUPPORTED_TRANSACTION_STATUS } = require('./constants');
 
 const Schema = mongoose.Schema;
 
@@ -14,18 +14,24 @@ const TransactionSchema = new Schema({
     required: true,
     default: 0
   },
-  agent_username: {
+  network: {
+    type: String,
+    required: true,
+    enum: SUPPORTED_NETWORKS
+  },
+  agent: {
     type: String,
     ref: Agent,
+    required: true
   },
-  wallet_address: {
+  destination_address: {
     type: String,
     required: true
   },
   status: {
     type: String,
-    default: "pending",
-    enum: ["pending", "processing", "completed"]
+    default: "PENDING",
+    enum: SUPPORTED_TRANSACTION_STATUS
   },
   
 }, { timestamps: true});

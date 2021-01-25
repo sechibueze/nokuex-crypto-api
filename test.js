@@ -30,7 +30,11 @@ let to = dest.address
  let wif = source.wif
  let private = source.private;
 
-BlockIo.get_address_balance({ address: '2N3HhGBDTVARQ96sKGAUYo56azd99EWtmRY'}).then(r => console.log('bal ', r)).catch(e => console.log(('e ', e)))
-BlockIo.widthdraw_from_addresses({ amount: .001,  from_addresses: '2N3HhGBDTVARQ96sKGAUYo56azd99EWtmRY' ,to_addresses: '2NBuBWfx4ZM8AJLqG7hGq4ysLzWFo3vdTjT' }).then(r => console.log('bal ', r)).catch(e => console.log(('e ', e)))
+BlockIo
+  .get_address_balance({ address: '2N3HhGBDTVARQ96sKGAUYo56azd99EWtmRY'})
+  .then(r => console.log('bal ', r))
+  .catch(e => console.log(('e ', e)))
+
+// BlockIo.widthdraw_from_addresses({ amount: .001,  from_addresses: '2N3HhGBDTVARQ96sKGAUYo56azd99EWtmRY' ,to_addresses: '2NBuBWfx4ZM8AJLqG7hGq4ysLzWFo3vdTjT' }).then(r => console.log('bal ', r)).catch(e => console.log(('e ', e)))
 
 // sendBitcoin(amount, to, from, wif).then(res => console.log(res)).catch(err => console.log(err))

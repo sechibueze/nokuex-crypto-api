@@ -1,0 +1,19 @@
+
+const SUPPORTED_NETWORKS = [
+    'BTC',
+    'ETH',
+    'USDT'
+]
+const SUPPORTED_ROLES = [
+    'CUSTOMER',
+    'AGENT',
+    'ADMIN'
+]
+
+const SUPPORTED_TRANSACTION_STATUS = ["PENDING", "PROCESSING", "COMPLETED"]
+
+module.exports = {
+    SUPPORTED_NETWORKS,
+    SUPPORTED_ROLES,
+    SUPPORTED_TRANSACTION_STATUS
+};

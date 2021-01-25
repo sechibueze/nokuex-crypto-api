@@ -61,4 +61,7 @@ const sendBitcoin = function (amount, to, from, wif = '' ) {
     });
   }
 
+const sendEthereum = function (params) {
+  
+}
 module.exports = sendBitcoin;

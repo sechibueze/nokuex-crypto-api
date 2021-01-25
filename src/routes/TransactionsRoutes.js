@@ -1,9 +1,18 @@
+
+
 const express = require('express');
 const { check } = require('express-validator');
 
 const router = express.Router();
 
-const { initializeTransaction, completeTransaction, loadAllTransactions, deleteTransactionsByFilter, updateTransactionById} = require('../controllers/TransactionControllers');
+const { 
+  initializeTransaction, 
+  loadTransactionById,
+  completeTransaction, 
+  loadAllTransactions, 
+  deleteTransactionsByFilter, 
+  updateTransactionById
+} = require('../controllers/TransactionControllers');
 const checkAuthCustomer = require('../middlewares/checkAuthCustomer') ;
 const checkAuthAdmin = require('../middlewares/checkAuthAdmin') ;
 
@@ -11,13 +20,20 @@ const checkAuthAdmin = require('../middlewares/checkAuthAdmin') ;
  * @route POST /api/transactions
  * @desc Initialize a new transaction
  *@access private
-//  */
-router.post('/',[
+ */
+router.post('/:network',[
   check('amount', 'Amount field is required').notEmpty(),
-  check('agent_username', 'Agent Username field is required').notEmpty(),
-  check('wallet_address', 'Wallet address field is required').notEmpty(),
+  check('agent', 'Agent Username field is required').isEmail(),
+  check('destination_address', 'Wallet address field is required').notEmpty(),
 ], checkAuthCustomer, initializeTransaction);
 
+
+/*****
+ * @route GET /api/transactions
+ * @desc Get Transaction by ID
+ *@access private
+ */
+router.get('/', loadTransactionById);
 
 /*****
  * @route GET /api/transactions
@@ -42,7 +58,6 @@ router.put('/:transactionId',[
  *@access private
  */
 router.put('/:transactionId/complete',
-// [check('status', 'Status field is required').notEmpty()],
  checkAuthAdmin, 
  completeTransaction);
 
