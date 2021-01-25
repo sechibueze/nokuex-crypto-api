@@ -6,7 +6,6 @@ const Customer = require('../models/Customer');
 
 /*** Handle Customer sign up request */
 const signup = (req, res) => {
-  console.log('calling signup')
   const errorsContainer = validationResult(req);
   if (!errorsContainer.isEmpty()) {
     return res.status(422).json({
@@ -16,7 +15,7 @@ const signup = (req, res) => {
   }
 
   // Passed all validations
-  const { firstname, lastname, email, phone, password, role } = req.body;
+  const { firstname, lastname, email, phone, password } = req.body;
   Customer.findOne({ email }, (err , customer) => {
 
     if ( err ) return res.status(500).json({ status: false, error: 'Server error:: Could not retrieve record'});
@@ -25,9 +24,9 @@ const signup = (req, res) => {
 
     // new Customer
     const defaultProfileImageUrl = gravatar.url(email, {s: '150', d: 'mm', r: 'pg'}, true);
-    let defaultRoles = ['customer'];
-    if (role === 'agent') defaultRoles = ['customer', 'agent'];
-    const newCustomer = new Customer({ roles: defaultRoles , firstname, lastname, phone, email, password, profileImage: defaultProfileImageUrl});
+    
+    // if (role === 'agent') defaultRoles = ['customer', 'agent'];
+    const newCustomer = new Customer({ firstname, lastname, phone, email, password, profileImage: defaultProfileImageUrl});
     // Hash password
     bcrypt.genSalt(10, (err, salt) => {
       if (err) return res.status(500).json({ status: false, error: 'Server error:: Failed to generate salt' });

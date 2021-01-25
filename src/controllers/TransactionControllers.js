@@ -9,8 +9,9 @@ const Agent = require('../models/Agent');
 const Customer = require('../models/Customer');
 const TransferCrypto = require('../_helpers/transferCrypto')
 const Transaction = require('../models/Transaction');
+const { SUPPORTED_NETWORKS, SUPPORTED_TRANSACTION_STATUS } = require('../models/constants')
 // const { key } = require("../config/blockio.config");
-
+const getAPIkeyfromNetwork = require('../_helpers/getAPIkeyfromNetwork');
 /*** Allow customers to initialize Transaction */
 const initializeTransaction = (req, res) => {
   const errorsContainer = validationResult(req);
@@ -20,15 +21,24 @@ const initializeTransaction = (req, res) => {
       errors: errorsContainer.errors.map(err => err.msg)
     });
   }
+ 
+  // confirm the right network was specified
+  const { network } = req.params;
+  if (!network || !SUPPORTED_NETWORKS.includes(network.trim().toUppercase())) {
+    return res.status(400).json({
+      status: false,
+      error: 'Invalid network specified'
+    });
+  }
 
   // Passed all validations
   const { 
     amount,
-    agent_username,
-    wallet_address
+    agent,
+    destination_address
   } = req.body;
 
-  Agent.findOne({ username: agent_username }, (err , agent) => {
+  Customer.findOne({ email: agent }, (err , agent) => {
 
     if ( err ) return res.status(500).json({ status: false, error: 'Server error:: Could not retrieve record'});
     
@@ -36,10 +46,11 @@ const initializeTransaction = (req, res) => {
 
     // Found agent
     let newTransactionData = { 
-      customer: req.authCustomer.id || req.authAdmin.id,
+      customer: req.authCustomer.id,
       amount,
-      agent_username,
-      wallet_address
+      network,
+      agent,
+      destination_address
     };
 
    
@@ -52,7 +63,7 @@ const initializeTransaction = (req, res) => {
           
             return res.status(201).json({
               status: true,
-              message: 'Initialized transaction successfully',
+              message: 'Transaction successfully initialized',
               data: newTransaction
             });
        
@@ -62,7 +73,50 @@ const initializeTransaction = (req, res) => {
   
 };
 
-/*** Allow agents to  transfer btc to customers */
+// load a single transaction by ID
+const loadTransactionById = (req, res) => {
+  
+  // Pass ID as query 
+  const { id } = req.query;
+  if (!id) {
+    return res.status(400).json({
+      status: false,
+      error: 'Invalid ID specified'
+    });
+  }
+  let filter = {
+    _id: id
+  };
+
+  Transaction.findOne(filter)
+  .populate({
+    path:"customer",
+    model: Customer,
+    select: ["firstname", "lastname", "email", "phone", "network", "amount"]
+  })
+  // .populate({
+  //   path: "agent",
+  //   model: Customer,
+  //   select: ["firstname", "lastname"]
+  // })
+    .then(transaction => {
+
+      return res.status(200).json({
+        status: true,
+        message: 'Requested Transaction',
+        data: transaction
+      });
+
+    })
+    .catch(err => {
+      return res.status(500).json({
+        status: false,
+        error: 'Failed to retrieve transaction'
+      })
+    })
+};
+
+/*** Allow agents to  transfer CRYPTO to customers */
 const completeTransaction = (req, res) => {
   const errorsContainer = validationResult(req);
   if (!errorsContainer.isEmpty()) {
@@ -75,44 +129,52 @@ const completeTransaction = (req, res) => {
   Transaction.findOne({ _id: req.params.transactionId })
   
   .then(transaction => {
-    console.log('trnx', transaction )
-    if (!transaction || transaction.status !== 'processing') {
+
+    if (!transaction || transaction.status !== 'PROCESSING') {
       return res.status(400).json({
         status: false,
         error: 'Transaction is not due for processing'
       })
     }
-    const source = {
-      initialBalance: 0.01786381,
-      private: "2bdc8af827e929de8b1b9eeb7ff15775b91a39e03c52fa3c483c7981dfcf4a4d",
-      public: "03d5f95022aaeeaea28a6c7ba1bf317ae08e0e7527773f41b79ccf92edef6a87f7",
-      address: "muESfmo9CSCpj66VvvxPwMZnq5sesV7WEG",
-      wif: "cP3xndR1TRwQUPY26W5xZxGLM75cdh9dCBjeb91aMBhkwbTYC1G1"
-    }
-    const dest = {
-      private: "82c0d694c7d4e80f8fd2932a83a22f0c0631207237a4adbb57ffca338fad58f0",
-      public: "02037eece0b7c0d7500f0e012f445d7e15037cfd3e75b90fbeae3c7e6d9d4f015d",
-      address: "mviPJ2vcmDNGCAGvX6fxonyKMfNFSiaNEE",
-      wif: "cRxsMJGfnHHoYjFPA69phMqXTKXSoeY2qPp4g2AWwX3ptSzwkMTE"
-    };
 
-    const walletAddress = transaction.wallet_address;
-    const amount = 100000;
-    TransferCrypto(amount, dest.address, source.address, source.wif)
-      .then(finaltx => {
-         console.log('final ', finaltx)
-         return res.json({
-           data: finaltx
-         })
-      })
-      .catch(error => {
-        console.log('error ', error)
-        return res.json({
-          error: error
-        })
-      })
-    
-    
+    const {network, amount, destination_address } = transaction;
+    const API_KEY = getAPIkeyfromNetwork(network);
+
+    let withdraw_uri = 'https://block.io/api/v2/withdraw_from_addresses';
+    const uri = `${withdraw_uri}/?api_key=${API_KEY}&to_addresses=${destination_address}&amounts=${amount}`;
+/*****
+ * CRYPTO TRANSFER BY BLOCKCYPHER
+
+    // const source = {
+    //   initialBalance: 0.01786381,
+    //   private: "2bdc8af827e929de8b1b9eeb7ff15775b91a39e03c52fa3c483c7981dfcf4a4d",
+    //   public: "03d5f95022aaeeaea28a6c7ba1bf317ae08e0e7527773f41b79ccf92edef6a87f7",
+    //   address: "muESfmo9CSCpj66VvvxPwMZnq5sesV7WEG",
+    //   wif: "cP3xndR1TRwQUPY26W5xZxGLM75cdh9dCBjeb91aMBhkwbTYC1G1"
+    // }
+    // const dest = {
+    //   private: "82c0d694c7d4e80f8fd2932a83a22f0c0631207237a4adbb57ffca338fad58f0",
+    //   public: "02037eece0b7c0d7500f0e012f445d7e15037cfd3e75b90fbeae3c7e6d9d4f015d",
+    //   address: "mviPJ2vcmDNGCAGvX6fxonyKMfNFSiaNEE",
+    //   wif: "cRxsMJGfnHHoYjFPA69phMqXTKXSoeY2qPp4g2AWwX3ptSzwkMTE"
+    // };
+
+    // const walletAddress = transaction.wallet_address;
+    // const amount = 100000;
+    // TransferCrypto(amount, dest.address, source.address, source.wif)
+    //   .then(finaltx => {
+    //      console.log('final ', finaltx)
+    //      return res.json({
+    //        data: finaltx
+    //      })
+    //   })
+    //   .catch(error => {
+    //     console.log('error ', error)
+    //     return res.json({
+    //       error: error
+    //     })
+    //   })
+******/ 
 
     })
     .catch(err => {
@@ -133,11 +195,11 @@ const loadAllTransactions = (req, res) => {
   .populate({
     path:"customer",
     model: Customer,
-    select: ["firstname", "lastname", "email", "phone"]
+    select: ["firstname", "lastname", "email", "phone", "network", "amount"]
   })
   // .populate({
-  //   path: "agent_username",
-  //   model: Agent,
+  //   path: "agent",
+  //   model: Customer,
   //   select: ["firstname", "lastname"]
   // })
     .then(transactions => {
@@ -190,7 +252,10 @@ const updateTransactionById = (req, res) => {
       }
 
       /**** Found transaction */
-      transaction.status = status;
+      
+      if (SUPPORTED_TRANSACTION_STATUS.includes(status.trim().toUppercase())) {
+        transaction.status = status;
+      }
 
       transaction.save(err => {
           if (err) return res.status(500).json({ status: false, error: 'Server error:: Failed to save Customer' });
@@ -255,8 +320,9 @@ const deleteTransactionsByFilter = (req, res) => {
 
 module.exports = {
   initializeTransaction,
-  completeTransaction,
+  loadTransactionById,
   loadAllTransactions,
+  completeTransaction,
   updateTransactionById,
   deleteTransactionsByFilter,
 };

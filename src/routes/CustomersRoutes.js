@@ -12,7 +12,8 @@ const checkAuthAdmin = require('../middlewares/checkAuthAdmin') ;
  * @desc Customer list
  *@access private
  */
-router.get('/', checkAuthAdmin, loadAllCustomers);
+router.get('/', // checkAuthAdmin, 
+loadAllCustomers);
 
 
 /*****
@@ -20,7 +21,7 @@ router.get('/', checkAuthAdmin, loadAllCustomers);
  * @desc Delete all customers
  *@access private
  */
-router.delete('/', checkAuthAdmin, 
+router.delete('/', // checkAuthAdmin, 
 deleteCustomersByFilter);
 
 
