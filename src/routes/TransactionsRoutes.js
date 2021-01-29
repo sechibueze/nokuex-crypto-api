@@ -23,8 +23,8 @@ const checkAuthAdmin = require('../middlewares/checkAuthAdmin') ;
  */
 router.post('/:network',[
   check('amount', 'Amount field is required').notEmpty(),
-  check('agent', 'Agent Username field is required').isEmail(),
-  check('destination_address', 'Wallet address field is required').notEmpty(),
+  check('agent_email', 'Agent Email field is required').isEmail(),
+  check('network', 'Network field is required').notEmpty(),
 ], checkAuthCustomer, initializeTransaction);
 
 
@@ -33,7 +33,7 @@ router.post('/:network',[
  * @desc Get Transaction by ID
  *@access private
  */
-router.get('/', loadTransactionById);
+router.get('/:transactionId', loadTransactionById);
 
 /*****
  * @route GET /api/transactions
@@ -67,7 +67,8 @@ router.put('/:transactionId/complete',
  * @desc Delete all transactions
  *@access private
  */
-router.delete('/', checkAuthAdmin, deleteTransactionsByFilter);
+router.delete('/', //checkAuthAdmin, 
+deleteTransactionsByFilter);
 
 
 

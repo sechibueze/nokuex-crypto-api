@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Transaction = require('./Transaction');
 
 const Schema = mongoose.Schema;
 
@@ -38,7 +39,7 @@ const CustomerSchema = new Schema({
     type: Number,
     default: 0,
   },
-  binance_balance: {
+  tether_balance: {
     type: Number,
     default: 0,
   },
@@ -50,9 +51,49 @@ const CustomerSchema = new Schema({
     type: String,
     default: ''
   },
-  binance_address: {
+  tether_address: {
     type: String,
     default: ''
+  },
+  bitcoin_private_key: {
+    type: String,
+    default: ''
+  },
+  ethereum_private_key: {
+    type: String,
+    default: ''
+  },
+  tether_private_key: {
+    type: String,
+    default: ''
+  },
+  bitcoin_public_key: {
+    type: String,
+    default: ''
+  },
+  ethereum_public_key: {
+    type: String,
+    default: ''
+  },
+  tether_public_key: {
+    type: String,
+    default: ''
+  },
+  bitcoin_wifi: {
+    type: String,
+    default: ''
+  },
+  ethereum_wifi: {
+    type: String,
+    default: ''
+  },
+  tether_wifi: {
+    type: String,
+    default: ''
+  },
+  transaction_list:{
+    type: Array,
+    default: []
   },
   profileImage: {
     type: String,
@@ -64,4 +105,10 @@ const CustomerSchema = new Schema({
   },
 }, { timestamps: true});
 
+CustomerSchema.post('remove', doc => {
+  const customerId = doc._id;
+  Transaction.find({ customer:customerId})
+    .then(transx => transx.map(async tx => await tx.remove()))
+    .catch(err => console.warn('Failed referencial integrity for Customer'))
+});
 module.exports = Customer = mongoose.model('customer', CustomerSchema);

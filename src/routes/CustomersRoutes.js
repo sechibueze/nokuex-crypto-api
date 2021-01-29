@@ -3,7 +3,7 @@ const { check } = require('express-validator');
 
 const router = express.Router();
 
-const { loadAllCustomers, deleteCustomersByFilter} = require('../controllers/CustomerControllers');
+const { loadAllCustomers, deleteCustomersByFilter, createCustomerWallet} = require('../controllers/CustomerControllers');
 const checkAuthCustomer = require('../middlewares/checkAuthCustomer') ;
 const checkAuthAdmin = require('../middlewares/checkAuthAdmin') ;
 
@@ -18,6 +18,14 @@ loadAllCustomers);
 
 /*****
  * @route DELETE /api/customers?id=<customer._id>
+ * @desc Delete all customers
+ *@access private
+ */
+router.delete('/', // checkAuthAdmin, 
+deleteCustomersByFilter);
+
+/*****
+ * @route PUT /api/customers/:id/wallet
  * @desc Delete all customers
  *@access private
  */
