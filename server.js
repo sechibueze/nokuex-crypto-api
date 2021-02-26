@@ -20,7 +20,7 @@ app.use((req, res, next) => {
 app.use('/api', apiRoute);
 app.use('/', (req, res) => {
   return res.json({
-    message: 'Nokuex OK',
+    message: 'Nokuex under test',
     v: 1
   })
 });

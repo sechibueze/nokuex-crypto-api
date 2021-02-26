@@ -139,8 +139,15 @@ const loadTransactionsByFilter = (req, res) => {
   // if(roles.includes('agent')) filter.agent = currentUserId;
   if(customerId) filter.customer = customerId;
   if(agentId) filter.agent = agentId;
+  if(!agentId && !customerId) {
+    return res.status(200).json({
+      status: true,
+      message: 'Please provide a filter',
+      data: []
+    });
+  }
  
-  Transaction.findOne(filter)
+  Transaction.find(filter)
   .populate({
     path:"customer",
     model: Customer,
@@ -186,6 +193,12 @@ const completeTransaction = (req, res) => {
       error: 'You have not specified a transaction ID'
     })
   }
+  if (!req.authCustomer.roles.includes("agent")) {
+    return res.status(400).json({
+      status: false,
+      error: 'Sorry, only agents can do this'
+    })
+  }
 
   Transaction.findOne({ _id:transactionId })
   .then(transaction => {
@@ -197,13 +210,20 @@ const completeTransaction = (req, res) => {
     }
 
     const {customer, network, amount, agent, destination_address } = transaction;
+    console.log('agent eq', req.authCustomer.id === agent.toString(), agent, req.authCustomer.id)
+    if (req.authCustomer.id !== agent.toString() ) {
+      return res.status(400).json({
+        status: false,
+        error: 'Agent must approve his trade'
+      })
+    }
     /**
      * Use the transaction data to find the 
      * coustomer(destination data) and agent(source data) for the transaction
      */
       Customer.findOne({ _id: customer })
         .then(customer => {
-          console.info('customer : ', customer.email)
+          console.info('customer : ', customer)
           if (!customer) {
             return res.status(400).json({
               status: false,
@@ -249,20 +269,21 @@ const completeTransaction = (req, res) => {
            * Customer did not enter address
            * update his balance on Nokuex
            */
-          console.info('checking destination_address :', destination_address )
-          if (!destination_address) {
-            switch (_network) {
+          console.info('checking destination_address in trx:', !transaction.destination_address )
+          if (!transaction.destination_address) {
+            console.info('newtwork', network )
+            switch (network) {
               case 'BTC':
                 customer.bitcoin_balance += amount;
-                customer.transaction_list = [...transaction_list, transactionId]
+                customer.transaction_list = [...customer.transaction_list, transactionId]
                 break;
               case 'ETH':
                 customer.ethereum_balance += amount;
-                customer.transaction_list = [...transaction_list, transactionId]
+                customer.transaction_list = [...customer.transaction_list, transactionId]
                 break;
               case 'USDT':
                 customer.tether_balance += amount;
-                customer.transaction_list = [...transaction_list, transactionId]
+                customer.transaction_list = [...customer.transaction_list, transactionId]
                 break;
               default:
                 console.warn('default: no match for crypto')
@@ -335,7 +356,7 @@ const completeTransaction = (req, res) => {
                   body: '',
                 }
                 
-                switch (_network) {
+                switch (network) {
                   case 'BTC':
                     payload.uri = 'https://api.cryptoapis.io/v1/bc/btc/testnet/txs/new';
                     payload.body = {
