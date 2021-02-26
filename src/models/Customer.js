@@ -105,10 +105,11 @@ const CustomerSchema = new Schema({
   },
 }, { timestamps: true});
 
-CustomerSchema.post('remove', doc => {
-  const customerId = doc._id;
+CustomerSchema.post('remove', function(next){
+  const customerId = this._id;
   Transaction.find({ customer:customerId})
     .then(transx => transx.map(async tx => await tx.remove()))
     .catch(err => console.warn('Failed referencial integrity for Customer'))
+    next()
 });
 module.exports = Customer = mongoose.model('customer', CustomerSchema);
