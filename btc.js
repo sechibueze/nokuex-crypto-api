@@ -26,11 +26,11 @@ const sendTx = () => {
         "createTx": { 
                 "inputs": [{
                 "address": source.address,
-                "value": 0.00018
+                "value": 0.005
             }],
             "outputs": [{
                 "address": dest.address,
-                "value": 0.00018
+                "value": 0.005
             }],
     
             "fee":  {

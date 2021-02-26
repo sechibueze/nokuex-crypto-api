@@ -105,6 +105,8 @@ const login = (req, res) => {
 // Verify user with token
 const getAuthenticatedCustomerData = (req, res) => {
   const currentCustomerId = req.authCustomer.id;
+  
+
 
   Customer.findOne({_id: currentCustomerId})
     .select('-password')
@@ -138,7 +140,7 @@ const toggleCustomerAdminStatus = (req, res) => {
     }
     
     const { email } = req.body;
-
+   
   Customer.findOne({ email })
     .select('-password')
     .then(customer => {
@@ -180,10 +182,71 @@ const toggleCustomerAdminStatus = (req, res) => {
     })
 };
 
+// Update Customers role 
+const toggleCustomerAgentStatus = (req, res) => {
+  
+   const errorsContainer = validationResult(req);
+    if (!errorsContainer.isEmpty()) {
+      return res.status(422).json({
+        status: false,
+        errors: errorsContainer.errors.map(err => err.msg)
+      });
+    }
+    
+    const { email } = req.body;
+    // const customerAuth = req.authCustomer.roles;
+    if (!req.authCustomer.roles.includes("admin")) {
+      return res.status(401).json({
+        status: false,
+        error: 'Only admin can make agent'
+      })
+    }
+  Customer.findOne({ email })
+    .select('-password')
+    .then(customer => {
+
+      if (!customer) {
+        return res.status(401).json({
+          status: false,
+          error: 'No customer account was found'
+        })
+      }
+
+      // Customer has an account
+      if (!customer.roles.includes('agent')) {
+        customer.roles = [...customer.roles, 'agent'];
+      }else{
+        customer.roles = customer.roles.filter(role => role !== 'agent');  
+      }
+
+      customer.save(err => {
+        if (err) {
+          return res.status(500).json({
+            status: false,
+            error: 'Failed to update customer role'
+          })
+        }
+
+        return res.status(200).json({
+          status: true,
+          message: 'Customer role has been updated accordingly',
+          data: customer.roles
+        });
+      })
+    })
+    .catch(err => {
+      return res.status(500).json({
+        status: false,
+        error: 'Failed to find customer'
+      })
+    })
+};
+
 
 module.exports = {
   signup,
   login,
   getAuthenticatedCustomerData,
   toggleCustomerAdminStatus,
+  toggleCustomerAgentStatus,
 };

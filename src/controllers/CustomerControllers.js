@@ -7,7 +7,18 @@ const Customer = require('../models/Customer');
 // loadAllUCustomers
 const loadAllCustomers = (req, res) => {
 
-  Customer.find()
+  let filter = {};
+  const customerAuth = req.authCustomer.roles;
+  if (!req.authCustomer.roles.includes("admin")) {
+    return res.status(401).json({
+      status: false,
+      error: 'Only admin can get customers list'
+    })
+  }
+  if(req.query.id) filter._id = req.query.id;
+
+
+  Customer.find(filter)
     .select('-password')
     .then(customers => {
 
@@ -31,11 +42,17 @@ const deleteCustomersByFilter = (req, res) => {
   let filter = {};
   const { id } = req.query;
   if(id) filter._id = id;
+  if (!req.authCustomer.roles.includes("admin")) {
+    return res.status(401).json({
+      status: false,
+      error: 'Only admin can make agent'
+    })
+  }
   console.info('customer to delete', filter)
   Customer
     .find(filter)
     .then(customers => {
-      console.warm('About to delete ', customers)
+      console.info('About to delete ', customers)
       if (customers.length < 1) {
         return res.status(404).json({
           status: false,
@@ -56,19 +73,7 @@ const deleteCustomersByFilter = (req, res) => {
             error: 'Failed to remove customers'
           });
         }
-      // })
-
-      // Customer.deleteMany(filter, err => {
-      //   if (err) {
-                    
-      //     return res.status(404).json({
-      //       status: false,
-      //       error: 'Failed to remove customers'
-      //     });
-      //   }
-
-        
-      // })
+     
     })
     .catch(err => {
       return res.status(500).json({
@@ -87,7 +92,7 @@ const createCustomerWallet = (req, res) => {
     console.warn('You must specifiy a block')
     return res.status(404).json({
       status: false,
-      error: 'No block was set'
+      error: 'No valid block was set'
     });
   }
   Customer.findById({_id: id})
@@ -137,7 +142,8 @@ const createCustomerWallet = (req, res) => {
                  console.log('error occured: ', err)
                   return res.status(404).json({
                     status: false,
-                    error: 'Failed to create address'
+                    error: 'Failed to create address',
+                    err
                   });
             }
             const body = JSON.parse(_body)

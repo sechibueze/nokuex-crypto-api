@@ -15,8 +15,12 @@ https://api.blockcypher.com/v1/eth/main/txs/send?token=YOURTOKEN
 - Customer signup 
 - Customer login
 - Get Customers Details by Token
-- Toggle customers/admin role
+- Toggle customers/admin role - anyone
+- Toggle customers/agent role - admin
 - List all customers by Admin
+- Allow customers to create wallet
+- Allow agent to see his customers transactions
+- Allow users to see his transactions
 - Delete customers/?id=<Customer._id> by Admin
 
 > TODO
