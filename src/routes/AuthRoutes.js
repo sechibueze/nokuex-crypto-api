@@ -2,8 +2,11 @@ const express = require('express');
 const { check } = require('express-validator');
 
 const router = express.Router();
-
-const { signup, login, getAuthenticatedCustomerData, toggleCustomerAdminStatus} = require('../controllers/AuthControllers');
+const { signup, login,
+   getAuthenticatedCustomerData, 
+   toggleCustomerAdminStatus,
+   toggleCustomerAgentStatus,
+  } = require('../controllers/AuthControllers');
 const checkAuthCustomer = require('../middlewares/checkAuthCustomer') ;
 
 /*****
@@ -43,7 +46,19 @@ router.get('/', checkAuthCustomer, getAuthenticatedCustomerData );
  * @desc Toggle admin role of any customer
  *@access secret
  */
-router.put('/', toggleCustomerAdminStatus);
+router.put('/', 
+[
+  check('email', 'Email field is required').isEmail(),
+], toggleCustomerAdminStatus);
+
+/*****
+ * @route PUT /api/auth/agents
+ * @desc Toggle agent role of any customer
+ *@access secret
+ */
+router.put('/agents', [
+  check('email', 'Email field is required').isEmail(),
+], checkAuthCustomer, toggleCustomerAgentStatus);
 
 
 module.exports = router;

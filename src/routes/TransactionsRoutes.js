@@ -1,5 +1,3 @@
-
-
 const express = require('express');
 const { check } = require('express-validator');
 
@@ -11,7 +9,8 @@ const {
   completeTransaction, 
   loadAllTransactions, 
   deleteTransactionsByFilter, 
-  updateTransactionById
+  updateTransactionById,
+  loadTransactionsByFilter,
 } = require('../controllers/TransactionControllers');
 const checkAuthCustomer = require('../middlewares/checkAuthCustomer') ;
 const checkAuthAdmin = require('../middlewares/checkAuthAdmin') ;
@@ -24,7 +23,7 @@ const checkAuthAdmin = require('../middlewares/checkAuthAdmin') ;
 router.post('/:network',[
   check('amount', 'Amount field is required').notEmpty(),
   check('agent_email', 'Agent Email field is required').isEmail(),
-  check('network', 'Network field is required').notEmpty(),
+  check('destination_address', 'Destination address field is required').notEmpty(),
 ], checkAuthCustomer, initializeTransaction);
 
 
@@ -33,14 +32,21 @@ router.post('/:network',[
  * @desc Get Transaction by ID
  *@access private
  */
-router.get('/:transactionId', loadTransactionById);
+router.get('/:transactionId', checkAuthCustomer, loadTransactionById);
 
 /*****
  * @route GET /api/transactions
  * @desc Transactions list
  *@access private
  */
-router.get('/', checkAuthAdmin, loadAllTransactions);
+router.get('/', checkAuthCustomer, loadAllTransactions);
+
+/*****
+ * @route GET /api/transactions/owners/filter?agentId=<_id>&customerId=<_id>
+ * @desc Transactions list bu filter
+ *@access private
+ */
+router.get('/owners/filter', checkAuthCustomer, loadTransactionsByFilter);
 
 /*****
  * @route PUT /api/transactions/:transactionId
@@ -67,7 +73,7 @@ router.put('/:transactionId/complete',
  * @desc Delete all transactions
  *@access private
  */
-router.delete('/', //checkAuthAdmin, 
+router.delete('/', checkAuthCustomer, 
 deleteTransactionsByFilter);
 
 

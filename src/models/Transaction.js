@@ -28,6 +28,10 @@ const TransactionSchema = new Schema({
     type: String,
     default: ''
   },
+  txId: {
+    type: String,
+    default: ''
+  },
   status: {
     type: String,
     default: "PENDING",

@@ -26,8 +26,8 @@ const initializeTransaction = (req, res) => {
  
   // confirm the right network was specified
   const { network } = req.params;
-  let _netwwork = network.trim().toUpperCase();
-  if (!_network || !SUPPORTED_NETWORKS.includes(_netwwork)) {
+  const _network = network ?  network.trim().toUpperCase() : "You did not set a network";
+  if (!_network || !SUPPORTED_NETWORKS.includes(_network)) {
     return res.status(400).json({
       status: false,
       error: 'Invalid network specified'
@@ -45,7 +45,8 @@ const initializeTransaction = (req, res) => {
 
     if ( err ) return res.status(500).json({ status: false, error: 'Server error:: Could not retrieve record'});
     
-    if (!agent) return res.status(400).json({ status: false, error: 'missing Agent\'s detail'});
+    if (!agent) return res.status(400).json({ status: false, error: 'Agent no found'});
+    if (!agent.roles.includes("agent")) return res.status(400).json({ status: false, error: 'You must do transx with an agent'});
 
     /***
      * Found agent,
@@ -54,7 +55,7 @@ const initializeTransaction = (req, res) => {
     let newTransactionData = { 
       customer: req.authCustomer.id,
       amount,
-      network: _netwwork,
+      network: network.trim().toUpperCase(),
       agent: agent._id,
       destination_address: destination_address ? destination_address : '',
     };
@@ -92,6 +93,13 @@ const loadTransactionById = (req, res) => {
   let filter = {
     _id: id
   };
+  const customerAuth = req.authCustomer.roles;
+    if (!req.authCustomer.roles.includes("admin")) {
+      return res.status(401).json({
+        status: false,
+        error: 'Only admin can make agent'
+      })
+    }
 
   Transaction.findOne(filter)
   .populate({
@@ -117,6 +125,46 @@ const loadTransactionById = (req, res) => {
       return res.status(500).json({
         status: false,
         error: 'Failed to retrieve transaction'
+      })
+    })
+};
+
+const loadTransactionsByFilter = (req, res) => {
+  // Pass ID as query 
+  let filter = {};
+  const { agentId, customerId} = req.query;
+  const roles = req.authCustomer.roles;
+  const currentUserId = req.authCustomer.id;
+
+  // if(roles.includes('agent')) filter.agent = currentUserId;
+  if(customerId) filter.customer = customerId;
+  if(agentId) filter.agent = agentId;
+ 
+  Transaction.findOne(filter)
+  .populate({
+    path:"customer",
+    model: Customer,
+    select: ["firstname", "lastname", "email", "phone", "network", "amount"]
+  })
+  // .populate({
+  //   path: "agent",
+  //   model: Customer,
+  //   select: ["firstname", "lastname"]
+  // })
+    .then(transx => {
+
+      return res.status(200).json({
+        status: true,
+        message: 'Requested Transaction',
+        data: transx
+      });
+
+    })
+    .catch(err => {
+      return res.status(500).json({
+        status: false,
+        error: 'Failed to retrieve transaction',
+        err
       })
     })
 };
@@ -148,7 +196,7 @@ const completeTransaction = (req, res) => {
       })
     }
 
-    const {customer, network, amount, agent, destination_address, transaction_list } = transaction;
+    const {customer, network, amount, agent, destination_address } = transaction;
     /**
      * Use the transaction data to find the 
      * coustomer(destination data) and agent(source data) for the transaction
@@ -189,8 +237,8 @@ const completeTransaction = (req, res) => {
           }
 
           // Confirm that trnsx hasnt been handled before
-          if (transaction_list.includes(transactionId)) {
-            console.warn('Transaction have been complede before : ', transaction_list, ' has ', transactionId)
+          if (customer.transaction_list.includes(transactionId)) {
+            console.warn('Transaction have been complede before : ', customer.transaction_list, ' has ', transactionId)
             return res.status(400).json({
               status: false,
               error: 'No double spend is allowed, Tranx compledeted earlier'
@@ -346,7 +394,7 @@ const completeTransaction = (req, res) => {
                       'x-api-key': process.env.CRYPTOAPIS_API_KEY
                   },
                   body: JSON.stringify(payload.body)
-                }, function(err, res, body) {
+                }, function(err, _res, _body) {
                   if (err) {
                       console.log('error occured: ', err);
                       return res.status(500).json({
@@ -354,12 +402,24 @@ const completeTransaction = (req, res) => {
                         error: err
                       })
                   }
-          
+
+                  const body = JSON.parse(_body)
                   console.log('success: ', body)
-                  return res.status(400).json({
-                    status: true,
-                    message: 'Transaction done',
-                    data: body
+                  txid = body.payload.txid;
+                  transaction.status = "COMPLETED";
+                  transaction.txId = txid;
+                  transaction.save(err => {
+                    if (err) {
+                      return res.status(500).json({
+                        status: false,
+                        error: 'Failed to save transxID' , err
+                      })
+                    }
+                    return res.status(200).json({
+                      status: true,
+                      message: 'Transaction done',
+                      data: body
+                    })
                   })
           
           
@@ -373,44 +433,8 @@ const completeTransaction = (req, res) => {
           }
          
         })
-        .catch(err => res.status(500).json({status: false, error: 'Failed to get customer'}))
+        .catch(err => res.status(500).json({status: false, error: 'Failed to get customer', err}))
     
-
-    // let withdraw_uri = 'https://block.io/api/v2/withdraw_from_addresses';
-    // const uri = `${withdraw_uri}/?api_key=${API_KEY}&to_addresses=${destination_address}&amounts=${amount}`;
-/*****
- * CRYPTO TRANSFER BY BLOCKCYPHER
-
-    // const source = {
-    //   initialBalance: 0.01786381,
-    //   private: "2bdc8af827e929de8b1b9eeb7ff15775b91a39e03c52fa3c483c7981dfcf4a4d",
-    //   public: "03d5f95022aaeeaea28a6c7ba1bf317ae08e0e7527773f41b79ccf92edef6a87f7",
-    //   address: "muESfmo9CSCpj66VvvxPwMZnq5sesV7WEG",
-    //   wif: "cP3xndR1TRwQUPY26W5xZxGLM75cdh9dCBjeb91aMBhkwbTYC1G1"
-    // }
-    // const dest = {
-    //   private: "82c0d694c7d4e80f8fd2932a83a22f0c0631207237a4adbb57ffca338fad58f0",
-    //   public: "02037eece0b7c0d7500f0e012f445d7e15037cfd3e75b90fbeae3c7e6d9d4f015d",
-    //   address: "mviPJ2vcmDNGCAGvX6fxonyKMfNFSiaNEE",
-    //   wif: "cRxsMJGfnHHoYjFPA69phMqXTKXSoeY2qPp4g2AWwX3ptSzwkMTE"
-    // };
-
-    // const walletAddress = transaction.wallet_address;
-    // const amount = 100000;
-    // TransferCrypto(amount, dest.address, source.address, source.wif)
-    //   .then(finaltx => {
-    //      console.log('final ', finaltx)
-    //      return res.json({
-    //        data: finaltx
-    //      })
-    //   })
-    //   .catch(error => {
-    //     console.log('error ', error)
-    //     return res.json({
-    //       error: error
-    //     })
-    //   })
-******/ 
 
     })
     .catch(err => {
@@ -426,6 +450,13 @@ const completeTransaction = (req, res) => {
 const loadAllTransactions = (req, res) => {
 
   let filter = {};
+  // const customerAuth = req.authCustomer.roles;
+    if (!req.authCustomer.roles.includes("admin")) {
+      return res.status(401).json({
+        status: false,
+        error: 'Only admin can make agent'
+      })
+    }
 
   Transaction.find(filter)
   .populate({
@@ -433,11 +464,6 @@ const loadAllTransactions = (req, res) => {
     model: Customer,
     select: ["firstname", "lastname", "email", "phone", "network", "amount"]
   })
-  // .populate({
-  //   path: "agent",
-  //   model: Customer,
-  //   select: ["firstname", "lastname"]
-  // })
     .then(transactions => {
 
       return res.status(200).json({
@@ -458,7 +484,14 @@ const loadAllTransactions = (req, res) => {
 // Update transactions
 const updateTransactionById = (req, res) => {
   const id = req.authCustomer.id;
-  const roles = req.authCustomer.auth;
+  const roles = req.authCustomer.roles;
+  // const customerAuth = req.authCustomer.roles;
+    if (!roles.includes("agent")) {
+      return res.status(401).json({
+        status: false,
+        error: 'Only agent can update transx'
+      })
+    }
 
   const errorsContainer = validationResult(req);
   if (!errorsContainer.isEmpty()) {
@@ -524,6 +557,13 @@ const deleteTransactionsByFilter = (req, res) => {
   let filter = {};
   const { id } = req.query;
   if(id) filter._id = id;
+  const customerAuth = req.authCustomer.roles;
+    if (!req.authCustomer.roles.includes("admin")) {
+      return res.status(401).json({
+        status: false,
+        error: 'Only admin can delete transx'
+      })
+    }
   Transaction
     .find(filter)
     .then(tranx => {
@@ -551,23 +591,7 @@ const deleteTransactionsByFilter = (req, res) => {
         }
       })
 
-      // Transaction.deleteMany(filter, err => {
-        
-      //   if (err) {
-                    
-      //     return res.status(400).json({
-      //       status: false,
-      //       error: 'Failed to remove transactions',
-      //       err: err
-      //     });
-      //   }
-
-      //   return res.status(200).json({
-      //     status: true,
-      //     message: 'Transactions removed',
-      //     data: Date.now()
-      //   });
-      // })
+      
     })
     .catch(err => {
       return res.status(500).json({
@@ -584,4 +608,5 @@ module.exports = {
   completeTransaction,
   updateTransactionById,
   deleteTransactionsByFilter,
+  loadTransactionsByFilter,
 };
