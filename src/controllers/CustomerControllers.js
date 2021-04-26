@@ -52,11 +52,19 @@ const updateCustomerById = (req, res) => {
         });
       }
 
-      const { account_name, account_number, bank_name } = req.body;
+      const {
+        firstname,
+        lastname,
+        account_name,
+        account_number,
+        bank_name,
+      } = req.body;
 
       if (account_name) customer.account_name = account_name;
       if (account_number) customer.account_number = account_number;
       if (bank_name) customer.bank_name = bank_name;
+      if (firstname) customer.firstname = firstname;
+      if (lastname) customer.lastname = lastname;
 
       customer.save((err) => {
         if (err) {
