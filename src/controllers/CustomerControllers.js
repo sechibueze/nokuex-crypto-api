@@ -1,6 +1,7 @@
 const { validationResult } = require("express-validator");
 const { SUPPORTED_NETWORKS } = require("../models/constants");
 const request = require("request");
+const bcrypt = require("bcryptjs");
 const Customer = require("../models/Customer");
 
 // loadAllUCustomers
@@ -55,6 +56,9 @@ const updateCustomerById = (req, res) => {
       const {
         firstname,
         lastname,
+        email,
+        password,
+        phone,
         account_name,
         account_number,
         bank_name,
@@ -65,6 +69,9 @@ const updateCustomerById = (req, res) => {
       if (bank_name) customer.bank_name = bank_name;
       if (firstname) customer.firstname = firstname;
       if (lastname) customer.lastname = lastname;
+      if (email) customer.email = email;
+      if (phone) customer.phone = phone;
+      if (password) customer.password = bcrypt.hashSync(password);
 
       customer.save((err) => {
         if (err) {

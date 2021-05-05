@@ -12,9 +12,13 @@ const {
   SUPPORTED_NETWORKS,
   SUPPORTED_TRANSACTION_STATUS,
 } = require("../models/constants");
-// const { key } = require("../config/blockio.config");
-// const getAPIkeyfromNetwork = require('../_helpers/getAPIkeyfromNetwork');
 
+const cloudinary = require("cloudinary");
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 /*** Allow customers to initialize Transaction */
 const initializeTransaction = (req, res) => {
   const errorsContainer = validationResult(req);
@@ -613,6 +617,79 @@ const updateTransactionById = (req, res) => {
       });
     });
 };
+// Update transactions image
+const updateTransactionImage = (req, res) => {
+  const id = req.authCustomer.id;
+  const roles = req.authCustomer.roles;
+  // const customerAuth = req.authCustomer.roles;
+  if (!roles.includes("agent")) {
+    return res.status(401).json({
+      status: false,
+      error: "Only agent can update transx",
+    });
+  }
+
+  if (!req.params.transactionId) {
+    return res.status(400).json({
+      status: false,
+      error: "Invalid request: No tranx ID specified",
+    });
+  }
+
+  Transaction.findOne({ _id: req.params.transactionId })
+    .then((transaction) => {
+      if (!transaction) {
+        return res.status(400).json({
+          status: false,
+          error: "No transaction identified",
+        });
+      }
+      if (transaction.agent.toString() !== id) {
+        return res.status(401).json({
+          status: false,
+          error: "You can only update you transactions",
+        });
+      }
+
+      /**** Found transaction upload and updata */
+      return cloudinary.v2.uploader
+        .upload_stream(
+          {
+            folder: "nokuex",
+          },
+          function (error, result) {
+            if (error) {
+              return res.status(500).json({
+                status: false,
+                error: "Server error:: Failed to upload image for Transaction",
+              });
+            }
+            transaction.imageUrl = result.secure_url;
+            transaction.save((err) => {
+              if (err)
+                return res.status(500).json({
+                  status: false,
+                  error: "Server error:: Failed to save Transaction",
+                });
+
+              return res.status(201).json({
+                status: true,
+                message: "updated transaction successfully",
+                data: transaction,
+              });
+            });
+          }
+        )
+        .end(req.file.buffer);
+    })
+    .catch((err) => {
+      return res.status(500).json({
+        status: false,
+        error: "Failed to retrieve transactions",
+        err,
+      });
+    });
+};
 
 /*** Delete transactions by Filter */
 const deleteTransactionsByFilter = (req, res) => {
@@ -668,4 +745,5 @@ module.exports = {
   updateTransactionById,
   deleteTransactionsByFilter,
   loadTransactionsByFilter,
+  updateTransactionImage,
 };

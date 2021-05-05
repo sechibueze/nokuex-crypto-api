@@ -41,6 +41,10 @@ const TransactionSchema = new Schema(
       type: String,
       default: "",
     },
+    imageUrl: {
+      type: String,
+      default: "https://picsum.photos/200",
+    },
     status: {
       type: String,
       default: "PENDING",
