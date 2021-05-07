@@ -622,6 +622,7 @@ const updateTransactionImage = (req, res) => {
   const id = req.authCustomer.id;
   const roles = req.authCustomer.roles;
   // const customerAuth = req.authCustomer.roles;
+  console.log("req files", req.files, req.file);
   if (!roles.includes("agent")) {
     return res.status(401).json({
       status: false,
@@ -639,11 +640,13 @@ const updateTransactionImage = (req, res) => {
   Transaction.findOne({ _id: req.params.transactionId })
     .then((transaction) => {
       if (!transaction) {
+        console.log("transx ", transaction._id, req.files.buffer);
         return res.status(400).json({
           status: false,
           error: "No transaction identified",
         });
       }
+      console.log("transx full", transaction);
       if (transaction.agent.toString() !== id) {
         return res.status(401).json({
           status: false,
@@ -652,7 +655,7 @@ const updateTransactionImage = (req, res) => {
       }
 
       /**** Found transaction upload and updata */
-      return cloudinary.v2.uploader
+      cloudinary.v2.uploader
         .upload_stream(
           {
             folder: "nokuex",
