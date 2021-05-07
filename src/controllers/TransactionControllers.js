@@ -621,6 +621,12 @@ const updateTransactionById = (req, res) => {
 const updateTransactionImage = (req, res) => {
   const id = req.authCustomer.id;
   const roles = req.authCustomer.roles;
+  if (!req.file) {
+    return res.status(400).json({
+      status: false,
+      error: "Please attach a file",
+    });
+  }
   // const customerAuth = req.authCustomer.roles;
   console.log("req files", req.files, req.file);
   if (!roles.includes("agent")) {
